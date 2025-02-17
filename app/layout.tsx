@@ -35,21 +35,92 @@
 
 
 // app/layout.tsx
+// import { Inter } from 'next/font/google';
+// import { cn } from '@/lib/utils';
+// // import '@/styles/globals.css';
+// import "./globals.css";
+// import MainLayout from './components/MainLayout';
+// import { ThemeProvider } from './providers/ThemeProvider';
+
+// const inter = Inter({ 
+//   subsets: ['latin'],
+//   variable: '--font-inter',
+// });
+
+// export const metadata = {
+//   title: 'Project Management System',
+//   description: 'A comprehensive project management system built with Next.js',
+// };
+
+// export default function RootLayout({
+//   children,
+// }: {
+//   children: React.ReactNode;
+// }) {
+//   return (
+//     <html lang="en" suppressHydrationWarning>
+//       <body className={cn(
+//         "min-h-screen bg-background font-sans antialiased",
+//         inter.variable
+//       )}>
+//         <ThemeProvider
+//           attribute="class"
+//           defaultTheme="system"
+//           enableSystem
+//           disableTransitionOnChange
+//         >
+//           <MainLayout>
+//             {children}
+//           </MainLayout>
+//         </ThemeProvider>
+//       </body>
+//     </html>
+//   );
+// }
+
+// app/layout.tsx
 import { Inter } from 'next/font/google';
+import { ClerkProvider, SignInButton, SignedIn, SignedOut, UserButton } from '@clerk/nextjs';
 import { cn } from '@/lib/utils';
-// import '@/styles/globals.css';
 import "./globals.css";
 import MainLayout from './components/MainLayout';
 import { ThemeProvider } from './providers/ThemeProvider';
 
+// Initialize Inter font
 const inter = Inter({ 
   subsets: ['latin'],
   variable: '--font-inter',
 });
 
+// Metadata configuration
 export const metadata = {
   title: 'Project Management System',
   description: 'A comprehensive project management system built with Next.js',
+};
+
+// Authentication wrapper component for consistent styling
+const AuthenticationWrapper = () => {
+  return (
+    <div className="absolute top-4 right-4 z-50">
+      <SignedOut>
+        <SignInButton mode="modal">
+          <button className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2">
+            Sign In
+          </button>
+        </SignInButton>
+      </SignedOut>
+      <SignedIn>
+        <UserButton 
+          appearance={{
+            elements: {
+              userButtonAvatarBox: "w-8 h-8"
+            }
+          }}
+          afterSignOutUrl="/"
+        />
+      </SignedIn>
+    </div>
+  );
 };
 
 export default function RootLayout({
@@ -58,22 +129,25 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={cn(
-        "min-h-screen bg-background font-sans antialiased",
-        inter.variable
-      )}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <MainLayout>
-            {children}
-          </MainLayout>
-        </ThemeProvider>
-      </body>
-    </html>
+    <ClerkProvider>
+      <html lang="en" suppressHydrationWarning>
+        <body className={cn(
+          "min-h-screen bg-background font-sans antialiased",
+          inter.variable
+        )}>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <MainLayout>
+              <AuthenticationWrapper />
+              {children}
+            </MainLayout>
+          </ThemeProvider>
+        </body>
+      </html>
+    </ClerkProvider>
   );
 }

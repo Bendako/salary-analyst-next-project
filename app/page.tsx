@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react';
-import { Github, CheckCircle, Clock, PieChart, TrendingUp, Calendar, Lock } from 'lucide-react';
+import { Github, Clock, PieChart, TrendingUp, Lock } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/LanguageContext';

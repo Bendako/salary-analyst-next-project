@@ -1,6 +1,7 @@
 "use client";
 
 import React from 'react';
+import Link from 'next/link';
 import { Menu, LineChart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import ThemeToggle from './ThemeToggle';
@@ -25,7 +26,7 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
             <Menu className="h-5 w-5" />
           </Button>
           
-          <div className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity">
             <LineChart className="h-6 w-6 text-primary" aria-hidden="true" />
             <div className="flex flex-col">
               <h1 className="hidden md:block text-xl font-semibold">
@@ -35,7 +36,7 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
                 ISA
               </h1>
             </div>
-          </div>
+          </Link>
         </div>
 
         {/* Center section - Theme toggle */}

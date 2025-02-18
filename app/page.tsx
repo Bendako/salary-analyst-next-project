@@ -191,7 +191,7 @@ const PlaceholderPage = () => {
             <motion.a
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              href="https://github.com/yourusername/income-analytics"
+              href="https://github.com/Bendako/salary-analyst-next-project"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"

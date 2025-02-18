@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react';
-import { Github, Languages, ArrowRight, CheckCircle, Clock, PieChart, TrendingUp, Calendar, Lock } from 'lucide-react';
+import { Github, Languages, CheckCircle, Clock, PieChart, TrendingUp, Calendar, Lock } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 type Language = 'en' | 'he';
@@ -171,7 +171,7 @@ const PlaceholderPage = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <h1 className="text-4xl md:text-6xl font-bold mt-8">
+            <h1 className="text-4xl font-bold mt-8">
               {t.title}
             </h1>
             <p className="text-xl font-semibold text-primary mt-4">
@@ -201,15 +201,6 @@ const PlaceholderPage = () => {
               <Github className="h-5 w-5" />
               <span>{t.viewOnGithub}</span>
             </motion.a>
-
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/90 transition-colors"
-            >
-              <span>{t.getStarted}</span>
-              <ArrowRight className="h-5 w-5" />
-            </motion.button>
           </motion.div>
 
           <div className="mt-12">

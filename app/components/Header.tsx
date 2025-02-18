@@ -2,15 +2,18 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Menu, LineChart } from 'lucide-react';
+import { Menu, LineChart, Languages } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import ThemeToggle from './ThemeToggle';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface HeaderProps {
   onMenuClick: () => void;
 }
 
 export const Header = ({ onMenuClick }: HeaderProps) => {
+  const { language, toggleLanguage } = useLanguage();
+
   return (
     <header className="h-16 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 fixed top-0 left-0 right-0 z-50">
       <div className="flex h-full items-center px-4 relative">
@@ -39,8 +42,17 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
           </Link>
         </div>
 
-        {/* Center section - Theme toggle */}
-        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+        {/* Right section - Theme toggle and Language selector */}
+        <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleLanguage}
+            aria-label={`Switch to ${language === 'en' ? 'Hebrew' : 'English'}`}
+            className="hover:bg-secondary/20"
+          >
+            <Languages className="h-5 w-5" />
+          </Button>
           <ThemeToggle />
         </div>
       </div>

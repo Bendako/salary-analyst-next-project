@@ -42,8 +42,9 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
           </Link>
         </div>
 
-        {/* Right section - Theme toggle and Language selector */}
-        <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
+        {/* Centered buttons - Theme toggle and Language selector */}
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-2">
+          <ThemeToggle />
           <Button
             variant="ghost"
             size="icon"
@@ -53,7 +54,6 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
           >
             <Languages className="h-5 w-5" />
           </Button>
-          <ThemeToggle />
         </div>
       </div>
     </header>

@@ -36,6 +36,9 @@ const navItems: NavItem[] = [
 export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
   const pathname = usePathname();
 
+  console.log('Sidebar render - isOpen:', isOpen);
+  console.log('Current pathname:', pathname);
+
   return (
     <>
       {/* Mobile overlay */}
@@ -50,8 +53,8 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed top-16 bottom-0 left-0 z-50 w-64 border-r border-border bg-background transition-transform duration-300",
-          isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0 md:w-20"
+          "fixed top-16 bottom-0 left-0 z-50 w-64 border-r border-border bg-background transition-transform duration-300 md:w-20",
+          isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         )}
       >
         <div className="flex h-full flex-col">

@@ -56,9 +56,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 const ThemeToggle = () => {
-  const { theme, setTheme } = useTheme();
+  const { setTheme } = useTheme();
   
-  console.log('Current theme:', theme); // Debug log
   
   return (
     <DropdownMenu>

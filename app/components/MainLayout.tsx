@@ -15,16 +15,25 @@ const MainLayout = ({ children }: MainLayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   
   const handleToggleSidebar = () => {
-    setSidebarOpen(prev => !prev);
+    console.log('Toggle sidebar clicked');
+    setSidebarOpen(prev => {
+      console.log('Previous sidebar state:', prev);
+      console.log('New sidebar state:', !prev);
+      return !prev;
+    });
   };
 
   const pathname = usePathname();
+  const [currentPathname, setCurrentPathname] = useState(pathname);
 
   useEffect(() => {
-    if (sidebarOpen) {
+    // Only close sidebar if pathname has actually changed
+    if (pathname !== currentPathname) {
+      console.log('Pathname changed, closing sidebar');
       setSidebarOpen(false);
+      setCurrentPathname(pathname);
     }
-  }, [pathname, sidebarOpen]);
+  }, [pathname, currentPathname]);
 
   return (
     <div className="min-h-screen bg-background">

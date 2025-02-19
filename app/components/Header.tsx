@@ -22,7 +22,10 @@ export const Header = ({ onMenuClick }: HeaderProps) => {
           <Button
             variant="ghost"
             size="icon"
-            onClick={onMenuClick}
+            onClick={() => {
+              console.log('Menu button clicked');
+              onMenuClick();
+            }}
             className="md:hidden"
             aria-label="Toggle navigation menu"
           >

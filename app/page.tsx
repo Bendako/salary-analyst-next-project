@@ -1,10 +1,12 @@
 'use client'
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Github, Clock, PieChart, TrendingUp, Lock } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { AuthModal } from './components/AuthModal';
 
 type Feature = {
   title: string;
@@ -116,6 +118,25 @@ const SecurityBadge = ({ isRTL }: { isRTL: boolean }) => (
 );
 
 const PlaceholderPage = () => {
+  const searchParams = useSearchParams();
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [attemptedRoute, setAttemptedRoute] = useState<string | undefined>(undefined);
+
+  useEffect(() => {
+    const authModal = searchParams.get('authModal');
+    const route = searchParams.get('attemptedRoute');
+
+    if (authModal === 'true') {
+      setIsAuthModalOpen(true);
+      setAttemptedRoute(route || undefined);
+    }
+  }, [searchParams]);
+
+  const handleCloseAuthModal = () => {
+    setIsAuthModalOpen(false);
+    setAttemptedRoute(undefined);
+  };
+
   const { language, isRTL } = useLanguage();
   const t = translations[language];
 
@@ -167,6 +188,12 @@ const PlaceholderPage = () => {
             />
           ))}
         </section>
+
+        <AuthModal 
+          isOpen={isAuthModalOpen} 
+          onClose={handleCloseAuthModal}
+          attemptedRoute={attemptedRoute}
+        />
       </div>
     </motion.main>
   );

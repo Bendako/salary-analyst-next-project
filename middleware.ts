@@ -1,6 +1,24 @@
-import { clerkMiddleware } from "@clerk/nextjs/server";
+import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { NextResponse } from 'next/server';
 
-export default clerkMiddleware();
+const isPublicRoute = createRouteMatcher([
+  '/',  // Home route
+]);
+
+export default clerkMiddleware(async (auth, req) => {
+  // If the route is not public, require authentication
+  if (!isPublicRoute(req)) {
+    const authObject = await auth();
+    if (!authObject.userId) {
+      // Redirect to home with attempted route information
+      const url = new URL('/', req.url);
+      url.searchParams.set('authModal', 'true');
+      url.searchParams.set('attemptedRoute', req.nextUrl.pathname);
+      
+      return NextResponse.redirect(url);
+    }
+  }
+});
 
 export const config = {
   matcher: [

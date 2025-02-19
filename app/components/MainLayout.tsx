@@ -1,10 +1,11 @@
 // app/components/layout/MainLayout.tsx
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { Header } from './Header';
 import { Sidebar } from './Sidebar';
+import { usePathname } from 'next/navigation';
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -16,6 +17,14 @@ const MainLayout = ({ children }: MainLayoutProps) => {
   const handleToggleSidebar = () => {
     setSidebarOpen(prev => !prev);
   };
+
+  const pathname = usePathname();
+
+  useEffect(() => {
+    if (sidebarOpen) {
+      setSidebarOpen(false);
+    }
+  }, [pathname, sidebarOpen]);
 
   return (
     <div className="min-h-screen bg-background">

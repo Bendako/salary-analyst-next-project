@@ -1,7 +1,7 @@
 // app/components/layout/Sidebar.tsx
 "use client";
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -35,13 +35,6 @@ const navItems: NavItem[] = [
 
 export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
   const pathname = usePathname();
-
-  useEffect(() => {
-    // Close sidebar on pathname change in mobile view
-    if (isOpen && pathname) {
-      onClose();
-    }
-  }, [pathname, isOpen, onClose]);
 
   return (
     <>

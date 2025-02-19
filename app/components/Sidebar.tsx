@@ -38,7 +38,7 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
 
   useEffect(() => {
     // Close sidebar on pathname change in mobile view
-    if (isOpen) {
+    if (isOpen && pathname) {
       onClose();
     }
   }, [pathname, isOpen, onClose]);

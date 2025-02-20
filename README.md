@@ -60,17 +60,18 @@ Configured for seamless Vercel deployment with:
 ### Convex Database
 - Real-time, serverless backend
 - Automatic type-safe API generation
-- Flexible data modeling
+- Flexible data modeling with runtime type validation
 
 #### Key Features
-- User management
-- Income tracking
-- Financial goal setting
+- User management with email-based identification
+- Income tracking with comprehensive categorization
+- Financial goal setting and tracking
+- Automatic type generation for end-to-end type safety
 
 #### Database Schema
-- `users`: Store user profiles
-- `incomeEntries`: Track income sources
-- `financialGoals`: Define and track financial objectives
+- `users`: Store user profiles with secure email-based authentication
+- `incomeEntries`: Track income sources with detailed metadata
+- `financialGoals`: Define and track financial objectives with progress tracking
 
 ### Setting Up Convex
 1. Install Convex:
@@ -78,15 +79,31 @@ Configured for seamless Vercel deployment with:
 npm install convex
 ```
 
-2. Initialize Convex project:
+2. Generate Types (Recommended):
+```bash
+npm run convex:codegen
+```
+
+3. Initialize Convex project:
 ```bash
 npx convex init
 ```
 
-3. Start Convex development server:
+4. Start Convex development server:
 ```bash
 npx convex dev
 ```
+
+#### Type Generation
+- Automatic TypeScript type generation for database schemas
+- Runtime type validation using `convex/values`
+- Ensures type consistency between frontend and backend
+- Reduces runtime errors through compile-time type checking
+
+#### Development Workflow
+- Use `convex/schema.ts` to define database structure
+- Create type-safe mutations and queries in `convex/*.ts` files
+- Leverage generated types for seamless integration
 
 ## 🤝 Contributing
 1. Fork the repository
@@ -157,14 +174,17 @@ git commit -m "🔐 Implement authentication system
 6. Database and API Setup - In Progress
 ```
 git commit -m "🗄️ Configure database and API layer
-- Initialize Convex database - In Progress
+- Initialize Convex database - Done
 - Install Convex package - Done
-- Set up project configuration - Pending
-- Set up schema and types - Pending
-- Create initial migrations - Pending
+- Set up project configuration - Done
+- Set up schema and types - Done
+- Create initial user management functions - Done
+- Create income tracking functions - Done
+- Add type generation script - Done
+- Implement data validation - Done
+- Set up error handling middleware - Pending
 - Add API utility functions - Pending
-- Implement data validation - Pending
-- Set up error handling middleware - Pending" - In Progress
+- Implement comprehensive type safety - In Progress
 ```
 
 7. Task Management Features - Pending

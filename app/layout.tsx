@@ -1,11 +1,13 @@
 // app/layout.tsx
 import { Inter } from 'next/font/google';
-import { ClerkProvider, SignInButton, SignedIn, SignedOut, UserButton } from '@clerk/nextjs';
+import { SignInButton, SignedIn, SignedOut, UserButton } from '@clerk/nextjs';
 import { cn } from '@/lib/utils';
 import "./globals.css";
 import MainLayout from './components/MainLayout';
 import { ThemeProvider } from './providers/ThemeProvider';
 import { LanguageProvider } from "@/contexts/LanguageContext";
+import { ConvexClientProvider } from '@/components/ConvexClientProvider';
+import { ClerkUserSync } from '@/components/ClerkUserSync';
 
 // Initialize Inter font
 const inter = Inter({ 
@@ -50,27 +52,28 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <ClerkProvider>
-      <html lang="en" suppressHydrationWarning>
-        <body className={cn(
-          "min-h-screen bg-background font-sans antialiased",
-          inter.variable
-        )}>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-          >
-            <LanguageProvider>
-              <MainLayout>
-                <AuthenticationWrapper />
-                {children}
-              </MainLayout>
-            </LanguageProvider>
-          </ThemeProvider>
-        </body>
-      </html>
-    </ClerkProvider>
+      <ConvexClientProvider>
+        <html lang="en" suppressHydrationWarning>
+          <body className={cn(
+            "min-h-screen bg-background font-sans antialiased",
+            inter.variable
+          )}>
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="system"
+              enableSystem
+              disableTransitionOnChange
+            >
+              <LanguageProvider>
+                <ClerkUserSync />
+                <MainLayout>
+                  <AuthenticationWrapper />
+                  {children}
+                </MainLayout>
+              </LanguageProvider>
+            </ThemeProvider>
+          </body>
+        </html>
+      </ConvexClientProvider>
   );
 }

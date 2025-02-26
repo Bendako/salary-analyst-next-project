@@ -42,9 +42,6 @@ import { Input } from "@/components/ui/input";
 import {
   Card,
   CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
   CardFooter
 } from "@/components/ui/card";
 import {
@@ -53,7 +50,6 @@ import {
   AlertTitle
 } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useUser } from "@clerk/nextjs";

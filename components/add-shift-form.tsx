@@ -1,8 +1,16 @@
 "use client"
 
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { format } from "date-fns";
-import { CalendarIcon, Clock, Building, Briefcase, DollarSign } from "lucide-react";
+import {
+  CalendarIcon,
+  Clock,
+  Building,
+  Briefcase,
+  DollarSign,
+  CheckCircle,
+  AlertCircle
+} from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -31,7 +39,21 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardFooter
+} from "@/components/ui/card";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle
+} from "@/components/ui/alert";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useUser } from "@clerk/nextjs";
@@ -59,16 +81,29 @@ const formSchema = z.object({
   }),
 });
 
-const AddShiftWorkForm = () => {
+type FormValues = z.infer<typeof formSchema>;
+
+export default function AddShiftWorkForm() {
+  // State for form completion tracking
+  const [formCompleted, setFormCompleted] = useState({
+    date: false,
+    workType: false,
+    location: false,
+    time: false,
+    rate: false
+  });
+
   const { user } = useUser();
   const addIncomeEntry = useMutation(api.income.addIncomeEntry);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [earnings, setEarnings] = useState<number | null>(null);
 
-  // Get Convex user when component mounts or user changes
-  const convexUser = useQuery(api.users.getUserByClerkId, user ? { clerkId: user.id } : 'skip');
+  const convexUser = useQuery(
+    api.users.getUserByClerkId, 
+    user ? { clerkId: user.id } : 'skip'
+  );
 
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       workType: "",
@@ -76,10 +111,11 @@ const AddShiftWorkForm = () => {
       startTime: "",
       endTime: "",
       hourlyRate: "",
+      date: undefined,
     },
   });
 
-  const calculateHours = (start: string, end: string) => {
+  const calculateHours = useCallback((start: string, end: string) => {
     if (!start || !end) return 0;
     
     const [startHours, startMinutes] = start.split(":").map(Number);
@@ -90,22 +126,64 @@ const AddShiftWorkForm = () => {
     
     const diffMinutes = endMinutesTotal - startMinutesTotal;
     return diffMinutes > 0 ? diffMinutes / 60 : 0;
-  };
+  }, []);
 
-  const calculateEarnings = () => {
+  const calculateEarnings = useCallback(() => {
     const values = form.getValues();
+    
+    // Only calculate if we have all required values
+    if (!values.startTime || !values.endTime || !values.hourlyRate) {
+      return 0;
+    }
+    
     const hours = calculateHours(values.startTime, values.endTime);
     const rate = parseFloat(values.hourlyRate) || 0;
     const totalEarnings = hours * rate;
+    
     setEarnings(totalEarnings);
     return totalEarnings;
-  };
+  }, [form, calculateHours]);
 
-  const handleTimeChange = () => {
+  const computeCompletionPercentage = useCallback(() => {
+    const completedSections = Object.values(formCompleted).filter(Boolean).length;
+    const totalSections = Object.keys(formCompleted).length;
+    return Math.round((completedSections / totalSections) * 100);
+  }, [formCompleted]);
+
+  const completionPercentage = useMemo(() => 
+    computeCompletionPercentage(), 
+    [computeCompletionPercentage]
+  );
+
+  // Track form completion status - safely subscribe to form changes
+  useEffect(() => {
+    const subscription = form.watch((values) => {
+      // Using type assertion since values might be partial during initialization
+      const formValues = values as Partial<FormValues>;
+      
+      setFormCompleted({
+        date: !!formValues.date,
+        workType: !!formValues.workType,
+        location: !!formValues.location && (formValues.location?.length ?? 0) >= 2,
+        time: !!formValues.startTime && !!formValues.endTime,
+        rate: !!formValues.hourlyRate
+      });
+      
+      // Only calculate earnings if we have the necessary values
+      if (formValues.startTime && formValues.endTime && formValues.hourlyRate) {
+        calculateEarnings();
+      }
+    });
+    
+    // Cleanup subscription on unmount
+    return () => subscription.unsubscribe();
+  }, [form, calculateEarnings]);
+
+  const handleTimeChange = useCallback(() => {
     calculateEarnings();
-  };
+  }, [calculateEarnings]);
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  const onSubmit = async (values: FormValues) => {
     if (!user || !convexUser) {
       toast.error("You must be logged in to add a shift");
       return;
@@ -123,12 +201,19 @@ const AddShiftWorkForm = () => {
         amount: finalEarnings,
         date: values.date.toISOString().split('T')[0], // Convert to YYYY-MM-DD
         category: values.workType,
-        description: `${values.location} - ${hours} hours (${values.startTime} - ${values.endTime})`
+        description: `${values.location} - ${hours.toFixed(2)} hours (${values.startTime} - ${values.endTime})`
       });
 
       toast.success("Shift added successfully!");
       form.reset(); // Reset form after successful submission
       setEarnings(null);
+      setFormCompleted({
+        date: false,
+        workType: false,
+        location: false,
+        time: false,
+        rate: false
+      });
     } catch (error) {
       console.error("Failed to add shift:", error);
       toast.error("Failed to add shift. Please try again.");
@@ -138,28 +223,53 @@ const AddShiftWorkForm = () => {
   };
 
   return (
-    <Card className="w-full max-w-md mx-auto bg-white dark:bg-gray-800 shadow-lg rounded-lg overflow-hidden">
-      <CardHeader className="bg-blue-500 dark:bg-blue-600 text-white">
-        <CardTitle className="text-2xl font-bold text-center">Add Shift</CardTitle>
-      </CardHeader>
-      <CardContent className="p-6">
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+    <Card className="w-full max-w-md mx-auto shadow-lg rounded-xl overflow-hidden border-0 bg-gradient-to-br from-white to-slate-50 dark:from-gray-800 dark:to-gray-900">
+      {/* <CardHeader className="bg-gradient-to-r from-indigo-500 to-purple-600 dark:from-indigo-600 dark:to-purple-700 text-white px-6 py-5"> */}
+        {/* <div className="flex justify-between items-center">
+          <div>
+            <CardTitle className="text-2xl font-bold tracking-tight">Add Shift</CardTitle>
+            <CardDescription className="text-indigo-100 mt-1">
+              Record your work hours and earnings
+            </CardDescription>
+          </div>
+          <Badge 
+            variant={completionPercentage === 100 ? "success" : "outline"} 
+            className={cn(
+              "font-semibold",
+              completionPercentage === 100 
+                ? "bg-green-500 hover:bg-green-600 text-white" 
+                : "bg-white/10 text-white hover:bg-white/20"
+            )}
+          >
+            {completionPercentage}% Complete
+          </Badge>
+        </div> */}
+      {/* </CardHeader> */}
+
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)}>
+          <CardContent className="p-6 space-y-6">
             {/* Date Field */}
             <FormField
               control={form.control}
               name="date"
               render={({ field }) => (
-                <FormItem className="flex flex-col">
-                  <FormLabel className="font-medium">Date</FormLabel>
+                <FormItem className="flex flex-col space-y-2">
+                  <FormLabel className="font-medium text-gray-700 dark:text-gray-300 flex items-center">
+                    <CalendarIcon className="h-4 w-4 mr-2 text-indigo-500" />
+                    Date
+                    {formCompleted.date && (
+                      <CheckCircle className="h-4 w-4 ml-2 text-green-500" />
+                    )}
+                  </FormLabel>
                   <Popover>
                     <PopoverTrigger asChild>
                       <FormControl>
                         <Button
-                          variant="outline"
+                          variant={field.value ? "outline" : "secondary"}
                           className={cn(
-                            "w-full pl-3 text-left font-normal",
-                            !field.value && "text-muted-foreground"
+                            "w-full pl-3 text-left font-normal border-slate-300 dark:border-slate-700 h-11",
+                            field.value ? "text-gray-900 dark:text-gray-100" : "text-muted-foreground"
                           )}
                         >
                           {field.value ? (
@@ -167,7 +277,7 @@ const AddShiftWorkForm = () => {
                           ) : (
                             <span>Select date</span>
                           )}
-                          <CalendarIcon className="ml-auto h-4 w-4" />
+                          <CalendarIcon className="ml-auto h-4 w-4 opacity-70" />
                         </Button>
                       </FormControl>
                     </PopoverTrigger>
@@ -177,6 +287,7 @@ const AddShiftWorkForm = () => {
                         selected={field.value}
                         onSelect={field.onChange}
                         initialFocus
+                        className="rounded-md border"
                       />
                     </PopoverContent>
                   </Popover>
@@ -185,23 +296,33 @@ const AddShiftWorkForm = () => {
               )}
             />
 
+            <Separator className="my-2" />
+
             {/* Work Type */}
             <FormField
               control={form.control}
               name="workType"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="font-medium">Work Type</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormItem className="space-y-2">
+                  <FormLabel className="font-medium text-gray-700 dark:text-gray-300 flex items-center">
+                    <Briefcase className="h-4 w-4 mr-2 text-indigo-500" />
+                    Work Type
+                    {formCompleted.workType && (
+                      <CheckCircle className="h-4 w-4 ml-2 text-green-500" />
+                    )}
+                  </FormLabel>
+                  <Select 
+                    onValueChange={field.onChange} 
+                    defaultValue={field.value}
+                  >
                     <FormControl>
-                      <SelectTrigger className="w-full">
+                      <SelectTrigger className="w-full h-11 border-slate-300 dark:border-slate-700">
                         <SelectValue placeholder="Select work type" />
-                        <Briefcase className="ml-auto h-4 w-4" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="school shift">School Shift</SelectItem>
-                      <SelectItem value="english lesson">English Lesson</SelectItem>
+                      <SelectItem value="school shift" className="py-2.5">School Shift</SelectItem>
+                      <SelectItem value="english lesson" className="py-2.5">English Lesson</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -214,16 +335,22 @@ const AddShiftWorkForm = () => {
               control={form.control}
               name="location"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="font-medium">Location / Institution</FormLabel>
+                <FormItem className="space-y-2">
+                  <FormLabel className="font-medium text-gray-700 dark:text-gray-300 flex items-center">
+                    <Building className="h-4 w-4 mr-2 text-indigo-500" />
+                    Location / Institution
+                    {formCompleted.location && (
+                      <CheckCircle className="h-4 w-4 ml-2 text-green-500" />
+                    )}
+                  </FormLabel>
                   <FormControl>
                     <div className="relative">
                       <Input 
                         placeholder="School/Institution name" 
                         {...field} 
-                        className="pl-10"
+                        className="pl-10 h-11 border-slate-300 dark:border-slate-700"
                       />
-                      <Building className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+                      <Building className="absolute left-3 top-3 h-5 w-5 text-slate-400" />
                     </div>
                   </FormControl>
                   <FormMessage />
@@ -231,57 +358,66 @@ const AddShiftWorkForm = () => {
               )}
             />
 
-            {/* Time Fields */}
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="startTime"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="font-medium">Start Time</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <Input 
-                          type="time" 
-                          {...field} 
-                          className="pl-10"
-                          onChange={(e) => {
-                            field.onChange(e);
-                            handleTimeChange();
-                          }}
-                        />
-                        <Clock className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+            <Separator className="my-2" />
 
-              <FormField
-                control={form.control}
-                name="endTime"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="font-medium">End Time</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <Input 
-                          type="time" 
-                          {...field} 
-                          className="pl-10"
-                          onChange={(e) => {
-                            field.onChange(e);
-                            handleTimeChange();
-                          }}
-                        />
-                        <Clock className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
+            {/* Time Fields */}
+            <div className="space-y-2">
+              <FormLabel className="font-medium text-gray-700 dark:text-gray-300 flex items-center">
+                <Clock className="h-4 w-4 mr-2 text-indigo-500" />
+                Shift Time
+                {formCompleted.time && (
+                  <CheckCircle className="h-4 w-4 ml-2 text-green-500" />
                 )}
-              />
+              </FormLabel>
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="startTime"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <div className="relative">
+                          <Input 
+                            type="time" 
+                            {...field} 
+                            className="pl-10 h-11 border-slate-300 dark:border-slate-700"
+                            onChange={(e) => {
+                              field.onChange(e);
+                              handleTimeChange();
+                            }}
+                          />
+                          <span className="absolute left-3 top-3 text-xs font-semibold text-slate-500">FROM</span>
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="endTime"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <div className="relative">
+                          <Input 
+                            type="time" 
+                            {...field} 
+                            className="pl-10 h-11 border-slate-300 dark:border-slate-700"
+                            onChange={(e) => {
+                              field.onChange(e);
+                              handleTimeChange();
+                            }}
+                          />
+                          <span className="absolute left-3 top-3 text-xs font-semibold text-slate-500">TO</span>
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
             </div>
 
             {/* Hourly Rate */}
@@ -289,58 +425,81 @@ const AddShiftWorkForm = () => {
               control={form.control}
               name="hourlyRate"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="font-medium">Hourly Rate</FormLabel>
+                <FormItem className="space-y-2">
+                  <FormLabel className="font-medium text-gray-700 dark:text-gray-300 flex items-center">
+                    <DollarSign className="h-4 w-4 mr-2 text-indigo-500" />
+                    Hourly Rate
+                    {formCompleted.rate && (
+                      <CheckCircle className="h-4 w-4 ml-2 text-green-500" />
+                    )}
+                  </FormLabel>
                   <Select 
                     onValueChange={(value) => {
                       field.onChange(value);
+                      // Safe to use setTimeout since we're client-side only
                       setTimeout(calculateEarnings, 0);
                     }} 
                     defaultValue={field.value}
                   >
                     <FormControl>
-                      <SelectTrigger className="w-full">
+                      <SelectTrigger className="w-full h-11 border-slate-300 dark:border-slate-700">
                         <SelectValue placeholder="Select hourly rate" />
-                        <DollarSign className="ml-auto h-4 w-4" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="32.31">$32.31</SelectItem>
-                      <SelectItem value="37.16">$37.16</SelectItem>
-                      <SelectItem value="80">$80.00</SelectItem>
-                      <SelectItem value="100">$100.00</SelectItem>
+                      <SelectItem value="32.31" className="py-2.5">$32.31</SelectItem>
+                      <SelectItem value="37.16" className="py-2.5">$37.16</SelectItem>
+                      <SelectItem value="80" className="py-2.5">$80.00</SelectItem>
+                      <SelectItem value="100" className="py-2.5">$100.00</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
                 </FormItem>
               )}
             />
-
+            
             {/* Earnings Display */}
-            {earnings !== null && (
-              <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg text-center">
-                <p className="text-lg font-semibold">
+            {earnings !== null && formCompleted.time && formCompleted.rate && (
+              <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-4 text-center">
+                <p className="text-lg font-semibold text-indigo-700 dark:text-indigo-300">
                   Total Hours: {calculateHours(form.getValues().startTime, form.getValues().endTime).toFixed(2)}
                 </p>
-                <p className="text-xl font-bold text-blue-600 dark:text-blue-400">
+                <p className="text-xl font-bold text-indigo-700 dark:text-indigo-300 mt-1">
                   Estimated Pay: ${earnings.toFixed(2)}
                 </p>
               </div>
             )}
-          </form>
-        </Form>
-      </CardContent>
-      <CardFooter className="px-6 py-4 bg-gray-50 dark:bg-gray-900/50">
-        <Button 
-          onClick={form.handleSubmit(onSubmit)}
-          className="w-full bg-blue-500 hover:bg-blue-600 text-white" 
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? "Submitting..." : "Add Shift"}
-        </Button>
-      </CardFooter>
+
+            {completionPercentage < 100 ? (
+              <Alert variant="destructive" className="mt-4">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Incomplete Form</AlertTitle>
+                <AlertDescription>
+                  Please complete all required fields before submitting.
+                </AlertDescription>
+              </Alert>
+            ) : (
+              <Alert className="mt-4 bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-400 border-green-200 dark:border-green-800">
+                <CheckCircle className="h-4 w-4" />
+                <AlertTitle>Ready to Submit</AlertTitle>
+                <AlertDescription>
+                  All required information has been provided.
+                </AlertDescription>
+              </Alert>
+            )}
+          </CardContent>
+
+          <CardFooter className="px-6 py-4 bg-gray-50 dark:bg-gray-800/50">
+            <Button 
+              type="submit"
+              className="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-medium h-11 disabled:opacity-50"
+              disabled={isSubmitting || completionPercentage < 100}
+            >
+              {isSubmitting ? "Submitting..." : "Add Shift"}
+            </Button>
+          </CardFooter>
+        </form>
+      </Form>
     </Card>
   );
-};
-
-export default AddShiftWorkForm;
+}

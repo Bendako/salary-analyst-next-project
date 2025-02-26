@@ -8,6 +8,7 @@ import { ThemeProvider } from './providers/ThemeProvider';
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { ConvexClientProvider } from '@/components/ConvexClientProvider';
 import { ClerkUserSync } from '@/components/ClerkUserSync';
+import { Toaster } from "sonner";
 
 // Initialize Inter font
 const inter = Inter({ 
@@ -66,6 +67,7 @@ export default function RootLayout({
             >
               <LanguageProvider>
                 <ClerkUserSync />
+                <Toaster />
                 <MainLayout>
                   <AuthenticationWrapper />
                   {children}

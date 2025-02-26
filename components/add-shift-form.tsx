@@ -32,6 +32,10 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { useMutation, useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { useUser } from "@clerk/nextjs";
+import { toast } from "sonner";
 
 // Define form schema with Zod
 const formSchema = z.object({
@@ -56,8 +60,13 @@ const formSchema = z.object({
 });
 
 const AddShiftWorkForm = () => {
+  const { user } = useUser();
+  const addIncomeEntry = useMutation(api.income.addIncomeEntry);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [earnings, setEarnings] = useState<number | null>(null);
+
+  // Get Convex user when component mounts or user changes
+  const convexUser = useQuery(api.users.getUserByClerkId, user ? { clerkId: user.id } : 'skip');
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -97,23 +106,35 @@ const AddShiftWorkForm = () => {
   };
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    setIsSubmitting(true);
-    
-    // Calculate final earnings
-    const finalEarnings = calculateEarnings();
-    
-    // Log the values for now - would be replaced with API call
-    console.log({
-      ...values,
-      hours: calculateHours(values.startTime, values.endTime),
-      earnings: finalEarnings,
-    });
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    setIsSubmitting(false);
-    // Here you'd navigate or show success
+    if (!user || !convexUser) {
+      toast.error("You must be logged in to add a shift");
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      
+      // Calculate final earnings
+      const finalEarnings = calculateEarnings();
+      const hours = calculateHours(values.startTime, values.endTime);
+      
+      await addIncomeEntry({
+        userId: convexUser._id,
+        amount: finalEarnings,
+        date: values.date.toISOString().split('T')[0], // Convert to YYYY-MM-DD
+        category: values.workType,
+        description: `${values.location} - ${hours} hours (${values.startTime} - ${values.endTime})`
+      });
+
+      toast.success("Shift added successfully!");
+      form.reset(); // Reset form after successful submission
+      setEarnings(null);
+    } catch (error) {
+      console.error("Failed to add shift:", error);
+      toast.error("Failed to add shift. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
